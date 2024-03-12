@@ -29,7 +29,6 @@
  * domain, offering new insights into the applications of dynamic numbers.
  */
 
-
 // Must include stdint.h gmp.h stdbool.h
 #include <stdint.h>
 #include <gmp.h>
@@ -40,7 +39,6 @@ struct C2PGMP_v2 {
         mpz_t Input, Output, Reference_Value;
         uint64_t Rotations, DU_Length, Parity_Reference_Pos;
         bool Direction;
-
 };
 
 int C2P_GMP_v2( struct C2PGMP_v2 *Object ) // Dynamic Unary 
@@ -48,44 +46,36 @@ int C2P_GMP_v2( struct C2PGMP_v2 *Object ) // Dynamic Unary
         // SOL == State of Logic also known as Parity
         uint64_t a,b,c,d, Unary_Int = 0, Write_Pos = 0, Read_Pos;
         bool Flag = false, PRef, Terminus_SOL, Current_Bit, Read_SOL, Write_SOL;
-        //printf("Rotations are %lu\n",Object->Rotations);
         if( Object->Rotations == 0 ){ fprintf(stderr, "Rotations must be greater than Zero\n"); return(EXIT_FAILURE); }
-        // Rotations allow for seeking a spicific encode or decode distance.    
         if( Object->DU_Length == 0 ){ fprintf(stderr,"Length of binary cannot be Zero\n"); return(EXIT_FAILURE); }
-        if( Object->Parity_Reference_Pos > Object->DU_Length )
+        b =  Object->DU_Length - 1; // For Effeciency.
+        if( Object->Parity_Reference_Pos )
         { fprintf(stderr,"Parity sampling position exceeds binary string (n-bit) length\n"); return(EXIT_FAILURE); }
 
         for( ; Object->Rotations > 0; --(Object->Rotations) ) // Master itteration control over both Encode and Decode
         {
-        //      printf("In C2P. Direction is %d Length is %lu\n",Object->Direction, Object->DU_Length);
                 mpz_set_ui(Object->Output,0); // Clear the write space.
                 Read_SOL = mpz_tstbit( Object->Input, 0 ); // Valid for both Encode and Decode.
                 Terminus_SOL = mpz_tstbit( Object->Input, Object->Parity_Reference_Pos ); // Can be any position from b(0) to b(DU_Length-1)
-        //      printf("Read_SOL is %d : Terminus_SOL is %d\n",Read_SOL, Terminus_SOL);
 
                 if( Object->Direction == true ) // The Encode direction
                 {
-        //              gmp_printf("In Encode direction Input is %Zu\n",Object->Input);
                         Write_SOL = !Terminus_SOL; // writing in Terminated Unary: 
-
                         for( Read_Pos = 0; ; )
                         {
-
                                 for( ; ; ) //Get the count of same parity bits in a row (run) : Unary_Int
                                 {
-                                        Current_Bit = mpz_tstbit( Object->Input, Read_Pos ); //Reads same bit twice in cycle but, is cleaner on control. 
+                                        Current_Bit = mpz_tstbit( Object->Input, Read_Pos ); 
                                         if( Current_Bit == Read_SOL ) { Unary_Int++; Read_Pos++; }
                                         else { Read_SOL = !Read_SOL; break; }
                                         if( Read_Pos == Object->DU_Length ) { Flag = true; break; }
                                 } // Endo Get Count
-        //                      printf("That count and the Unary Int is %lu\n",Unary_Int);
                                 for( ; Unary_Int != 0 ; --Unary_Int )
                                 {
                                         if( Terminus_SOL == false & Unary_Int > 1 ) mpz_setbit( Object->Output, Write_Pos );
                                         if( Unary_Int == 1 & Terminus_SOL == true ) mpz_setbit( Object->Output, Write_Pos );
                                         Write_Pos++;
                                 }
-        //                      printf("After Unary_int is %lu\n",Unary_Int);
                                 if( Flag ) break;
 
                         }
@@ -93,8 +83,7 @@ int C2P_GMP_v2( struct C2PGMP_v2 *Object ) // Dynamic Unary
                 else  // The Decode direction
                 {
                         Flag = false;
-                        b =  Object->DU_Length - 1; // For Effeciency.
-                                                    // Determine the starting state of logic ( starting parity ) for writing.
+                        // Determine the starting state of logic ( starting parity ) for writing.
                         Terminus_SOL = mpz_tstbit( Object->Input, b ); // Read the Terminus from last bit.
                         if( Object->Parity_Reference_Pos > 0 )  // If b0 then Terminus is strting parity
                                 for( Write_SOL = false, a = 0; a < Object->DU_Length; a++ ) // Assume starting Write_SOL and search. 
@@ -111,7 +100,6 @@ int C2P_GMP_v2( struct C2PGMP_v2 *Object ) // Dynamic Unary
                                 }
                         else Write_SOL = Terminus_SOL; // Write_SOL is parity at Terminus (EOS)
                                                        // Write runs of same parity bits per terminated unary integer length
-                        //printf("Write_SOL is %d and Terminus_SOL is %d\n",Write_SOL, Terminus_SOL);
 
                         for( Read_Pos = 0 ; Flag != true; )
                         {
@@ -123,8 +111,6 @@ int C2P_GMP_v2( struct C2PGMP_v2 *Object ) // Dynamic Unary
                                         if( Current_Bit == Terminus_SOL ) break; // EOS : 
 
                                 }
-
-                                //printf("Read_Pos is %lu Unary_Int is %lu Write_SOL is %d Flag is %d\n",Read_Pos,Unary_Int,Write_SOL, Flag);
 
                                 for( ; ; ) // Write the bits out
                                 {
@@ -139,12 +125,10 @@ int C2P_GMP_v2( struct C2PGMP_v2 *Object ) // Dynamic Unary
                         {
                                 mpz_set( Object->Input, Object->Output );
                         }
-                }// Endo Rotations
+                }
+        } // Endo Rotations
 
-
-        }
 }// Endo C2P_GMP_v2
-
 
 void Init_C2PGMP_v2( struct C2PGMP_v2 *Object )
 {
